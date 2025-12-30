@@ -1,3 +1,4 @@
+use std::fs;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 
@@ -39,160 +40,58 @@ impl WebServer {
     }
 
     fn serve_form(&self, stream: &mut TcpStream) {
-    let html = r#"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Name Request Form</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Welcome!</h1>
-        <p>Please enter your name:</p>
-        <form action="/submit" method="POST">
-            <input type="text" name="name" placeholder="Enter your name" required>
-            <button type="submit">Submit</button>
-        </form>
-    </div>
-</body>
-</html>"#;
+        let html = fs::read_to_string("html/startup.html")
+            .unwrap_or_else(|_| String::from("<h1>Error loading page</h1>"));
 
-    let response = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: {}\r\n\r\n{}",
-        html.len(),
-        html
-    );
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: {}\r\n\r\n{}",
+            html.len(),
+            html
+        );
 
-    stream.write_all(response.as_bytes()).unwrap();
-    stream.flush().unwrap();
+        stream.write_all(response.as_bytes()).unwrap();
+        stream.flush().unwrap();
     }
 
     fn handle_form_submission(&self, stream: &mut TcpStream, request: &str) {
-    // Extract the name from POST data
-    let body = request.split("\r\n\r\n").nth(1).unwrap_or("");
-    let name = body
-        .split('&')
-        .find(|param| param.starts_with("name="))
-        .and_then(|param| param.strip_prefix("name="))
-        .unwrap_or("Unknown");
+        // Extract the name from POST data
+        let body = request.split("\r\n\r\n").nth(1).unwrap_or("");
+        let name = body
+            .split('&')
+            .find(|param| param.starts_with("name="))
+            .and_then(|param| param.strip_prefix("name="))
+            .unwrap_or("Unknown");
 
-    // URL decode the name (replace + with space and handle %XX encoding)
-    let name = name.replace('+', " ");
-    let name = urlencoding::decode(&name).unwrap_or(std::borrow::Cow::Borrowed(&name));
+        // URL decode the name (replace + with space and handle %XX encoding)
+        let name = name.replace('+', " ");
+        let name = urlencoding::decode(&name).unwrap_or(std::borrow::Cow::Borrowed(&name));
 
-    let html = format!(
-        r#"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Greeting</title>
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }}
-        .container {{
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }}
-        h1 {{
-            color: #4CAF50;
-        }}
-        a {{
-            display: inline-block;
-            margin-top: 20px;
-            color: #4CAF50;
-            text-decoration: none;
-        }}
-        a:hover {{
-            text-decoration: underline;
-        }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Hello, {}!</h1>
-        <p>Thank you for submitting your name.</p>
-        <a href="/">← Go Back</a>
-    </div>
-</body>
-</html>"#,
-        name
-    );
+        let html = fs::read_to_string("html/response.html")
+            .unwrap_or_else(|_| String::from("<h1>Error loading page</h1>"))
+            .replace("{{NAME}}", &name);
 
-    let response = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: {}\r\n\r\n{}",
-        html.len(),
-        html
-    );
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: {}\r\n\r\n{}",
+            html.len(),
+            html
+        );
 
-    stream.write_all(response.as_bytes()).unwrap();
-    stream.flush().unwrap();
+        stream.write_all(response.as_bytes()).unwrap();
+        stream.flush().unwrap();
     }
 
     fn serve_404(&self, stream: &mut TcpStream) {
-    let html = r#"<!DOCTYPE html>
-<html>
-<head>
-    <title>404 Not Found</title>
-</head>
-<body>
-    <h1>404 - Page Not Found</h1>
-    <p><a href="/">Go to Home</a></p>
-</body>
-</html>"#;
+        let html = fs::read_to_string("html/not_found.html")
+            .unwrap_or_else(|_| String::from("<h1>404 Not Found</h1>"));
 
-    let response = format!(
-        "HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
-        html.len(),
-        html
-    );
+        let response = format!(
+            "HTTP/1.1 404 NOT FOUND\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+            html.len(),
+            html
+        );
 
-    stream.write_all(response.as_bytes()).unwrap();
-    stream.flush().unwrap();
+        stream.write_all(response.as_bytes()).unwrap();
+        stream.flush().unwrap();
     }
 }
 
