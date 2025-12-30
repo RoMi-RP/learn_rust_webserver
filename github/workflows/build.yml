@@ -1,0 +1,28 @@
+name: WeatherStation
+
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+  push:
+    branches: [ "main", "develop", "release" ]
+  pull_request:
+    branches: [ "main", "develop", "release" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      working-directory: ./weather_station
+      run: cargo build --verbose
+      
