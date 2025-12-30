@@ -23,6 +23,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      working-directory: ./weather_station
+      working-directory: .
       run: cargo build --verbose
       
