@@ -200,9 +200,9 @@ impl WebServer {
 mod urlencoding {
     use std::borrow::Cow;
 
-    pub fn decode(s: &str) -> Result<Cow<str>, ()> {
+    pub fn decode(string: &str) -> Result<Cow<'_, str>, ()> {
         let mut result = String::new();
-        let mut chars = s.chars();
+        let mut chars = string.chars();
 
         while let Some(ch) = chars.next() {
             if ch == '%' {
