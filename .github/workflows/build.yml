@@ -1,4 +1,4 @@
-name: WeatherStation
+name: Learn Rust WebServer CI
 
 on:
   workflow_dispatch:
