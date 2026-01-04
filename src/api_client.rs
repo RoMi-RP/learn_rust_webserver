@@ -59,10 +59,15 @@ impl ApiClient {
             email: email.to_string(),
         };
 
-        let body = serde_json::to_string(&user).map_err(|e| e.to_string())?;
+        let body = serde_json::to_string(&user).map_err(|error| error.to_string())?;
         let response = self.make_request("POST", "/api/users", Some(&body))?;
+
+        println!("Raw response: {}", response);
+
         let api_response: ApiResponse<User> =
-            serde_json::from_str(&response).map_err(|e| e.to_string())?;
+            serde_json::from_str(&response).map_err(|e| {
+                format!("JSON parse error: {}. Response was: '{}'", e, response)
+            })?;
 
         if api_response.success {
             api_response.data.ok_or_else(|| "No data returned".to_string())
